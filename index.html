@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nostalgy.Core</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css" rel="stylesheet">
+
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="theme-color" content="#0d6efd" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <style>
+        .thumb { height: 70px; object-fit: cover; border-radius: .35rem; }
+        .thumbs-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+        body { background-image: linear-gradient(to bottom, #0d6efd, navy); background-repeat: no-repeat; min-height: 100vh;}
+         /* Botón de instalación visible y flotante */
+        #btnInstall {
+            position: fixed; right: 16px; bottom: 16px;
+            padding: 12px 16px; border: 0; border-radius: 10px;
+            background: #0d6efd; color: white; font-size: 14px; cursor: pointer;
+            box-shadow: 0 6px 18px rgba(0,0,0,.2); z-index: 9999;
+        }
+        #btnInstall[hidden] { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container py-5 mt-4 bg-dark">
+        <div class="text-center mb-4">
+            <h1 class="display-4 text-info mb-3 fw-bold">Nostalgy.Core</h1>
+            <p class="text-white fs-4 p-3">Registro de productos de Nostalgy.Core</p>
+            <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#productoModal">
+                Registrar Nuevo Producto
+            </button>
+            <button id="clearAll" class="btn btn-danger btn-lg ms-2">
+                Limpiar todo
+            </button>
+        </div>
+        <div id="productoContainer" class="row g-4"></div>
+    </div>
+    <!--Modal: Formulario-->
+    <div class="modal fade" id="productoModal" tabindex="-1" aria-labelledby="productoModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="productoModalLabel">Registro de Nuevo Producto</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body bg-dark text-white p-4">
+                    <form id="productoForm">
+                        <div class="row g-3">
+
+                            <div class="col-md-6">
+                                <label for="clave" class="form-label">Clave de producto*</label>
+                                <input type="text" class="form-control" id="clave" placeholder="123HJJH" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="nombreProducto" class="form-label">Nombre del Producto*</label>
+                                <input type="text" class="form-control" id="nombreProducto" placeholder="Ej: Fondo estilo Y2K" required>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="precio" class="form-label">Precio*</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="precio" placeholder="0.00" step="0.01" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="estadoProducto" class="form-label">Categoria*</label>
+                                <select class="form-select" id="estadoProducto" required>
+                                    <option value="">Seleccionar Categoria</option>
+                                    <option value="interfaz">Interfaz</option>
+                                    <option value="wallpaper">Wallpaper</option>
+                                    <option value="iconos">Iconos</option>
+                                    <option value="recorridoVirtual">Recorrido Virtual</option>
+                                </select>
+                            </div>
+
+                            <div class="col-12">
+                                <label for="descripcion" class="form-label">Descripción*</label>
+                                <textarea class="form-control" id="descripcion" rows="3" placeholder="Describe brevemente el producto..."></textarea>
+                            </div>
+
+                            <div class="col-12">
+                                <label for="imagenes" class="form-label">Imágenes del Producto (puedes subir una o varias)</label>
+                                <input type="file" id="imagenes" class="form-control" accept="image/*" multiple />
+                                <div class="form-text text-white">Se guardan de forma temporal como Data URLs en el LocalStorage (límite aproximado total 5-10 MB por sitio).</div>
+                            </div>
+                        </div>
+                    </form>
+                </div> 
+                <div class="modal-footer bg-dark">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" form="productoForm" class="btn btn-primary">Guardar Producto</button>
+                </div>
+            </div>
+        </div>
+    </div> 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+
+    <script type="module">
+        const firebaseConfig = {
+            apiKey: "AIzaSyC0dtG1vh1jlVrZxJMG0NDma_1CZQ4V4ak",
+            authDomain: "mi-primer-proyecto-25aa3.firebaseapp.com",
+            projectId: "mi-primer-proyecto-25aa3",
+            storageBucket: "mi-primer-proyecto-25aa3.firebasestorage.app",
+            messagingSenderId: "376190693443",
+            appId: "1:376190693443:web:caa2aa6e657c2571b0e4f6",
+            measurementId: "G-4V8L96SRM2"
+        };
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { 
+            getFirestore, collection, addDoc, serverTimestamp,
+            onSnapshot, query, orderBy, deleteDoc, doc,
+            enableIndexedDbPersistence, updateDoc
+        } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        const isConfigComplete = Object.values(firebaseConfig).every(
+            v => typeof v === 'string' && v && !v.includes("TU_PROYECTO") && !v.includes("TU_API_KEY") && !v.includes("XXX")
+        );
+        if (!isConfigComplete) {
+            document.getElementById('alertConfig').classList.remove('d-none');
+        }
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        enableIndexedDbPersistence(db).catch(() => {});
+
+        const cloudName = "dtt9izdjm";      
+        const uploadPreset = "pwa_unsigned";
+
+        const modal = new bootstrap.Modal(document.getElementById('productoModal'));
+        const form = document.getElementById('productoForm');
+        const container = document.getElementById('productoContainer');
+
+        function currencyMX(n) {
+            return Number(n||0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function renderProjects(productos) {
+            container.innerHTML = '';
+
+            const estadoClases = {
+                interfaz: 'info',
+                'wallpaper': 'primary',
+                'iconos': 'warning',
+                recorridoVirtual: 'success'
+            };
+
+            const estadoTexto = {
+                interfaz: 'Interfaz',
+                'wallpaper': 'Wallpaper',
+                'iconos': 'Iconos',
+                recorridoVirtual: 'Recorrido Virtual'
+            };
+
+            productos.forEach(p => {
+                const col = document.createElement('div');
+                col.className = 'col-md-6 col-lg-4 mb-4';
+
+                const thumbs = (p.imagenes || []).slice(0, 3)
+                    .map(u => `<img class="thumb w-100" src="${u}" alt="${p.nombre}">`)
+                    .join('');
+                
+                const extra = (p.imagenes?.length || 0) - 3;
+
+                col.innerHTML = `
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-header bg-${estadoClases[p.estado]} text-white d-flex align-items-center justify-content-between">
+                            <h5 class="card-title mb-0"><strong>Nombre: </strong>${p.nombre}</h5>
+                            <button class="btn btn-sm btn-light" data-action="delete" data-index="${p_id}" title="Eliminar">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text mb-2">
+                                <strong>Clave: </strong> ${p.clave}<br />
+                                <strong>Precio: </strong> $${currencyMX(p.precio)}<br />
+                            </p>
+                            
+                            ${p.descripcion ? `<p class="card-text text-muted"><strong>Descripción: </strong><small>${p.descripcion}</small></p>` : ''}
+                            ${(p.imagenes && p.imagenes.length)
+                                ? `<div class="thumbs-grid mt-2">${thumbs}</div>${extra>0? `<div class="mt-2"><span class="badge bg-secondary">+${extra} más</span></div> ` : ''} `
+                                : '<div class="text-muted"><em>Sin imágenes</em></div>'}
+                        </div>
+                        <div class="card-footer">
+                            <span class="badge bg-${estadoClases[p.estado]} w-100">${estadoTexto[p.estado]}</span>
+                        </div>
+                    </div>`;
+
+                container.appendChild(col);
+            });
+
+            container.querySelectorAll('[data-action="delete"]').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const id = e.currentTarget.getAttribute('data-id');
+                    if (id && confirm('¿Eliminar producto?')) {
+                        await deleteDoc(doc(db,'produtos', id));
+                    }
+                });
+            });
+        }
+
+        const proyectosRef = collection(db, 'productos');
+        const q = query(proyectosRef, orderBy('createdAt','desc'));
+
+        onSnapshot(q, (snap) => {
+            const arr = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+            renderProjects(arr);
+        });
+
+        async function uploadImagesToCloudinary(files, idProyecto) {
+            const list = Array.from(files || []);
+            const urls = [];
+
+            for (const file of list) {
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("upload_preset", uploadPreset);
+                formData.append("folder", `proyectos/${idProyecto}`);
+
+                const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await res.json();
+
+                if (data.secure_url) {
+                    urls.push(data.secure_url);
+                } else {
+                    console.error("Error al subir imagen a Cloudinary", data);
+                }
+            }
+
+            return urls;
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const nombre       = document.getElementById('nombreProducto').value.trim();
+            const clave      = document.getElementById('clave').value.trim();
+            const precio  = parseFloat(document.getElementById('precio').value || '0');
+            const estado       = document.getElementById('estadoProducto').value;
+            const descripcion  = document.getElementById('descripcion').value.trim();
+            const imgsInput    = document.getElementById('imagenes');
+
+            const docRef = await addDoc(proyectosRef, {
+                nombre,
+                clave,
+                precio,
+                estado,
+                descripcion,
+                imagenes: [],
+                createdAt: serverTimestamp()
+            });
+
+            if (imgsInput.files && imgsInput.files.length) {
+                const urls = await uploadImagesToCloudinary(imgsInput.files, docRef.id);
+                if (urls.length) {
+                    await updateDoc(doc(db, 'produtos', docRef.id), { imagenes: urls });
+                }
+            }
+
+            e.target.reset();
+            modal.hide();
+        });
+
+        let deferredPrompt;
+        const installBtn = document.getElementById('installBtn');
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.hidden = false;
+        });
+  
+        installBtn?.addEventListener('click', async () => {
+            installBtn.hidden = true;
+            deferredPrompt?.prompt();
+            await deferredPrompt?.userChoice;
+            deferredPrompt = null;
+        });
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js');
+        }
+    </script>
+    <button id="btnInstall" hidden>Instalar app</button>
+</body>
+</html>
